@@ -1,4 +1,5 @@
 package com.ming.parser.json
+
 import com.ming.parser.core.Parser
 import com.ming.parser.core.Parser._
 import cats.implicits._
@@ -22,6 +23,7 @@ object JSON {
 }
 
 object JsonParser {
+
   import JSON._
 
   val jsonNull: Parser[JSON] = string("null").map(_ => JNull)
@@ -29,14 +31,8 @@ object JsonParser {
     case "true" => JBoolean(true)
     case "false" => JBoolean(false)
   }
+  val jsonNumber: Parser[JSON] = naturalNumber.map(JNumber)
+  val jsonString: Parser[JSON] = (char('"') *> literal <* char('"')).map(JString)
 
-  val jsonValue = jsonNull <+> jsonBoolean
-
-
-  //jsonValue.run("null")
-  //jsonValue.run("true")
-  //jsonValue.run("false")
-  //
-  //digit.run("123")
-  //naturalNumber.run("123")
+  val jsonValue = jsonNull <+> jsonBoolean <+> jsonNumber <+> jsonString
 }

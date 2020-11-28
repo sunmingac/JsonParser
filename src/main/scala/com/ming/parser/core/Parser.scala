@@ -1,4 +1,5 @@
 package com.ming.parser.core
+
 import cats._
 import cats.implicits._
 
@@ -59,29 +60,33 @@ object Parser {
     y.map(_.mkString)
   }
 
+  def charP(c: Char => Boolean): Parser[Char] = Parser(s =>
+    for {
+      v <- s.headOption if c(v)
+    } yield (s.tail, s.head)
+  )
+
+  def literal: Parser[String] = many(charP(_ != '"')).map(_.mkString)
+
   def digit: Parser[Char] = Parser(s =>
     for {
       c <- s.headOption if (c.isDigit)
     } yield (s.tail, c)
   )
 
-  def map2[A,B,C](p1: Parser[A], p2: => Parser[B])(f: (A,B) => C): Parser[C] = {
-    val ff = f.curried
-    p1.map(v => ff(v)).ap(p2)
-  }
+  def map2[A, B, C](p1: Parser[A], p2: => Parser[B])(f: (A, B) => C): Parser[C] = for {
+    a <- p1
+    b <- p2
+  } yield f(a, b)
 
-//  def many[A](p: Parser[A]): Parser[A] = Parser(s => {
-//    p.run(s) match {
-//      case Some((s1, a1)) => many(Applicative[Parser].pure(a1)).run(s1)
-//      case x => x
-//    }
-//
-//  })
+  def many1[A](p: Parser[A]): Parser[List[A]] =
+    map2(p, many(p))(_ :: _)
 
-  def naturalNumber: Parser[Int] = Parser(s => {
-    val reg = "(^\\d+)(.*)".r
-    reg.unapplySeq(s).map(v => (v.last, v.head.toInt))
-  })
+  def many[A](p: Parser[A]): Parser[List[A]] =
+    map2(p, many(p))(_ :: _) <+> Applicative[Parser].pure(Nil)
+
+  def naturalNumber: Parser[Int] = many1(digit).map(_.mkString.toInt)
+
 }
 
 
